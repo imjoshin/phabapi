@@ -1,32 +1,28 @@
 import util
 import re
-import conf
-import auth
-import const
-from bs4 import BeautifulSoup
 import soupsieve
-from entities import Notification
+from bs4 import BeautifulSoup
 
-class DiffParser(handler):
+class DiffParser():
     def __init__(self, handler):
         self.handler = handler
 
     def _handle_new_revision(self, id, desc, body):
         username = util.get_regex_match(body, ">([^>]+) created this revision")
 
-        if username not None:
+        if username is not None:
             self.handler.on_diff_new(id, desc, username)
 
     def _handle_request_changes(self, id, desc, body):
         username = util.get_regex_match(body, ">([^>]+) requested changes to this revision.")
 
-        if username not None:
+        if username is not None:
             self.handler.on_diff_request_changes(id, desc, username)
 
     def _handle_comments(self, id, desc, body):
         username = util.get_regex_match(body, ">([^>]+) added a comment.")
 
-        if username not None:
+        if username is not None:
             soup = BeautifulSoup(body, 'html.parser')
             paragraphs = soup.select("div > div > p")
             comment = None
@@ -39,7 +35,7 @@ class DiffParser(handler):
     def _handle_inline_comments(self, id, desc, body):
         username = util.get_regex_match(body, ">([^>]+) added inline comments")
 
-        if username not None:
+        if username is not None:
             soup = BeautifulSoup(body, 'html.parser')
             comment_divs = soup.select("div > strong + div > div > div > div")
             files = {}
@@ -69,7 +65,7 @@ class TaskParser():
     def _handle_comments(self, id, desc, body):
         username = util.get_regex_match(body, ">([^>]+) added a comment.")
 
-        if username not None:
+        if username is not None:
             soup = BeautifulSoup(body, 'html.parser')
             paragraphs = soup.select("div > div > p")
             comment = None
@@ -83,7 +79,7 @@ class TaskParser():
         username = util.get_regex_match(body, ">([^>]+) moved this task")
         movement = util.get_regex_match(body, "moved this task ([^\.]+)")
 
-        if username not None:
+        if username is not None:
             self.handler.on_task_move(id, desc, username)
 
     def parse(self, id, desc, body):

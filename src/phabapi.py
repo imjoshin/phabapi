@@ -1,14 +1,10 @@
 import email
 import imaplib
-import subprocess
 import time
 import os
 import sys
-import conf
-import auth
 import util
 import parse
-from entities import Notification
 
 
 class PhabAPI:
@@ -17,25 +13,25 @@ class PhabAPI:
         self.email = email
         self.password = password
         self.label = label
-        self.last_id = None
+        self.last_id = -1
         self.connection = None
-        self.diff_parser = parser.DiffParser(phab_handler)
-        self.task_parser = parser.TaskParser(phab_handler)
+        self.diff_parser = parse.DiffParser(phab_handler)
+        self.task_parser = parse.TaskParser(phab_handler)
 
-    def start(self):
+    def start(self, sleep_time=5):
         self._connect()
         while True:
             self._check_loop()
-            time.sleep(5)
+            time.sleep(sleep_time)
 
     def _connect(self):
         self.connection = imaplib.IMAP4_SSL(self.stmp_server)
         self.connection.login(self.email, self.password)
         self.connection.select(self.label)
 
-        if self.last_id is None:
-            ids = self._get_new_email_ids(-1)
-            self.last_id = ids[-1] if len(ids) > 0 else 0
+        if self.last_id < 0:
+            ids = self._get_new_email_ids()
+            self.last_id = ids[-1] - 100 if len(ids) > 0 else 0
 
     def _get_new_email_ids(self):
         _, data = self.connection.search(None, 'ALL')
@@ -66,7 +62,6 @@ class PhabAPI:
 
     def _check_loop(self):
         new_mail = self._get_new_email()
-        notifications = []
 
         for mail in new_mail:
             phab_id = util.regex_phab_id(mail['subject'])
@@ -77,10 +72,7 @@ class PhabAPI:
                 body = ''.join([str(p) for p in body.get_payload(decode=True)])
 
             parser = self.task_parser if phab_id[0] == 'T' else self.diff_parser
-            parsed = parser.parse(phab_id, phab_desc, body.decode())
-            notifications = notifications + parsed
-
-        return notifications
+            parser.parse(phab_id, phab_desc, body.decode())
 
 
 class PhabHandler():

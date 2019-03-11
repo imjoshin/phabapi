@@ -1,0 +1,4 @@
+MAIL_SMTP = "imap.gmail.com"
+MAIL_USER = "EMAIL"
+MAIL_PASS = "APP PASS"
+MAIL_LABEL = "Phabricator"
