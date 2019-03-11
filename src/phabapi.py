@@ -88,7 +88,7 @@ class PhabAPI:
             if mail.is_multipart():
                 body = ''.join([str(p) for p in body.get_payload(decode=True)])
 
-            parser = self.task_parser if phab_id[0] == 'T' else self.diff_parser
+            parser = self.task_parser if phab_id and phab_id[0] == 'T' else self.diff_parser
             parser.parse(phab_id, phab_desc, body.decode())
 
 
