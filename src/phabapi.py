@@ -5,7 +5,7 @@ import os
 import sys
 import util
 import parse
-
+import signal
 
 class PhabAPI:
     def __init__(self, phab_handler, stmp_server, email, password, label):
@@ -13,16 +13,27 @@ class PhabAPI:
         self.email = email
         self.password = password
         self.label = label
-        self.last_id = -1
-        self.connection = None
         self.diff_parser = parse.DiffParser(phab_handler)
         self.task_parser = parse.TaskParser(phab_handler)
+        self.last_id = -1
+        self.connection = None
+        self.last_reconnect = -1
 
-    def start(self, sleep_time=5):
-        self._connect()
+    def start(self, sleep_time=3):
+        signal.signal(signal.SIGINT, self._signal_handler)
+
         while True:
+            cur_time = round(time.time())
+            if cur_time > self.last_reconnect + 60:
+                self._disconnect()
+                self._connect()
+                self.last_reconnect = cur_time
+
             self._check_loop()
             time.sleep(sleep_time)
+
+    def _signal_handler(self, sig, frame):
+        exit(0)
 
     def _connect(self):
         self.connection = imaplib.IMAP4_SSL(self.stmp_server)
@@ -31,7 +42,13 @@ class PhabAPI:
 
         if self.last_id < 0:
             ids = self._get_new_email_ids()
-            self.last_id = ids[-1] - 100 if len(ids) > 0 else 0
+            self.last_id = ids[-1] if len(ids) > 0 else 0
+
+    def _disconnect(self):
+        if self.connection:
+            self.connection.close()
+            self.connection.logout()
+            self.connection = None
 
     def _get_new_email_ids(self):
         _, data = self.connection.search(None, 'ALL')
