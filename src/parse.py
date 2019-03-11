@@ -55,6 +55,7 @@ class DiffParser():
 
     def parse(self, id, desc, body):
         self._handle_inline_comments(id, desc, body),
+        self._handle_new_revision(id, desc, body),
         self._handle_comments(id, desc, body),
         self._handle_request_changes(id, desc, body),
         self._handle_ready_to_land(id, desc, body)
