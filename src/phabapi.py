@@ -85,11 +85,16 @@ class PhabAPI:
             phab_desc = util.get_regex_match(mail['subject'], "[DT][0-9]+: (.*)")
 
             body = mail.get_payload(decode=True)
+            if not body:
+                body = mail.get_payload()
+
             if mail.is_multipart():
-                body = ''.join([str(p) for p in body.get_payload(decode=True)])
+                body = ''.join([str(p.get_payload(decode=True)) for p in body])
+            else:
+                body = body.decode()
 
             parser = self.task_parser if phab_id and phab_id[0] == 'T' else self.diff_parser
-            parser.parse(phab_id, phab_desc, body.decode())
+            parser.parse(phab_id, phab_desc, body)
 
 
 class PhabHandler():
